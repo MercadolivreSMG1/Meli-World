@@ -1,0 +1,15 @@
+# Blueprint do Render (render.com): New > Blueprint > aponte para o repositório.
+services:
+  - type: web
+    name: meli-world
+    runtime: docker
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATA_DIR
+        value: /data
+    # Disco persistente para o SQLite (sem ele, o progresso some a cada deploy/reinício).
+    # Discos exigem plano pago no Render; remova este bloco para testar no plano gratuito.
+    disk:
+      name: meli-world-data
+      mountPath: /data
+      sizeGB: 1
