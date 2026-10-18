@@ -1,0 +1,17 @@
+# Blueprint do Render (render.com) — use este arquivo se o projeto estiver na RAIZ do repositório.
+# (Se estiver na pasta meli-world-github/, use o render.yaml da raiz que vem no zip.)
+services:
+  - type: web
+    name: meli-world
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: ROOM_MAX
+        value: "30"
+      - key: DATABASE_URL
+        sync: false
