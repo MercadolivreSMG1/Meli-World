@@ -1,0 +1,29 @@
+# Blueprint do Render: servidor multiplayer do MELI WORLD (codigo em meli-world-v0.4/meli-world-github)
+{
+  "services": [
+    {
+      "type": "web",
+      "name": "meli-world",
+      "runtime": "node",
+      "plan": "free",
+      "rootDir": "meli-world-v0.4/meli-world-github",
+      "buildCommand": "npm install && npm run build",
+      "startCommand": "npm start",
+      "healthCheckPath": "/api/health",
+      "envVars": [
+        {
+          "key": "NODE_VERSION",
+          "value": "22"
+        },
+        {
+          "key": "ROOM_MAX",
+          "value": "30"
+        },
+        {
+          "key": "DATABASE_URL",
+          "sync": false
+        }
+      ]
+    }
+  ]
+}
