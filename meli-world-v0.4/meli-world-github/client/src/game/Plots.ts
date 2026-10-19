@@ -29,6 +29,8 @@ export class PlotLayer {
   buildItem = "";
   buildPlot = "";
   buildInside = false;
+  /** celular: em vez do botão direito, um modo "remover" */
+  removeMode = false;
 
   constructor(private scene: Phaser.Scene) {
     for (const pl of this.world.plots) {
@@ -47,7 +49,7 @@ export class PlotLayer {
       const t = this.tileInPlot(ptr);
       if (!t) return;
       const sfx = this.buildInside ? "_in" : "";
-      if (ptr.rightButtonDown()) net.send("plot", { op: "remove_decor" + sfx, plotId: this.buildPlot, x: t[0], y: t[1] });
+      if (ptr.rightButtonDown() || this.removeMode) net.send("plot", { op: "remove_decor" + sfx, plotId: this.buildPlot, x: t[0], y: t[1] });
       else net.send("plot", { op: "decor" + sfx, plotId: this.buildPlot, itemId: this.buildItem, x: t[0], y: t[1] });
     });
     scene.input.mouse?.disableContextMenu();
@@ -121,6 +123,7 @@ export class PlotLayer {
 
   stopBuild() {
     this.buildItem = "";
+    this.removeMode = false;
     this.ghost.setVisible(false);
     this.ghostBox.setVisible(false);
     Hud.setBanner(null);

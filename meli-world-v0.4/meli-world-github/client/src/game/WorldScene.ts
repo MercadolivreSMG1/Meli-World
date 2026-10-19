@@ -13,6 +13,7 @@ import * as Hud from "../ui/hud";
 import { bakerTexture, bootTextures, characterTexture, GROUND_CHUNK, propTexture } from "./Textures";
 import { Guide } from "./Guide";
 import { PlotLayer } from "./Plots";
+import { isTouch, touchInput } from "../ui/touch";
 import { togglePanel } from "../ui/panels";
 
 interface Avatar {
@@ -155,7 +156,8 @@ export class WorldScene extends Phaser.Scene {
     document.querySelector(".minimap")?.addEventListener("click", () => togglePanel("map"));
     // ataque: F ou clique esquerdo (fora do modo decoração)
     this.input.on("pointerdown", (ptr: Phaser.Input.Pointer) => {
-      if (ptr.leftButtonDown() && !this.plotLayer.buildItem && !this.blocked()) this.attack();
+      // no celular o ataque é pelo botão ⚔ (tocar na tela não ataca sem querer)
+      if (!isTouch && ptr.leftButtonDown() && !this.plotLayer.buildItem && !this.blocked()) this.attack();
     });
     lookProvider.npc = (id) => this.state?.npcs?.get?.(id)?.look ?? null;
     mapProvider.entities = () => this.mapEntities();
@@ -177,7 +179,10 @@ export class WorldScene extends Phaser.Scene {
   }
 
   applyZoom() {
-    const z = Math.max(2, Math.min(4, Math.round(window.innerHeight / 290)));
+    // celular: zoom pelo menor lado da tela, para caber o suficiente do mapa em pé ou deitado
+    const z = isTouch
+      ? Math.max(2, Math.min(3, Math.round(Math.min(window.innerWidth, window.innerHeight) / 175)))
+      : Math.max(2, Math.min(4, Math.round(window.innerHeight / 290)));
     this.cameras.main.setZoom(z);
   }
 
@@ -475,9 +480,13 @@ export class WorldScene extends Phaser.Scene {
       if (K.right.isDown || K.right2.isDown) dx += 1;
       if (K.up.isDown || K.up2.isDown) dy -= 1;
       if (K.down.isDown || K.down2.isDown) dy += 1;
+      if (!dx && !dy && (touchInput.dx || touchInput.dy)) {
+        dx = touchInput.dx;
+        dy = touchInput.dy;
+      }
     }
     const moving = dx !== 0 || dy !== 0;
-    const run = moving && K.shift.isDown;
+    const run = moving && (K.shift.isDown || touchInput.run);
     const prof = store.profile;
     const myState = this.state.players.get(net.sid);
     const pushing = myState?.carry === "baker";

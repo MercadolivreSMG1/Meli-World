@@ -12,9 +12,11 @@ import { h, root } from "./ui/dom";
 import * as Hud from "./ui/hud";
 import { minigameOpen, openMinigame } from "./ui/minigames";
 import { closePanel, refreshOpenPanel, showBoard, showLevelUp, showMissionComplete, togglePanel } from "./ui/panels";
+import { initTouch, isTouch } from "./ui/touch";
 import { plotHooks, showMarket, showMp, showPlot, showRealty, showShop } from "./ui/commerce";
 
 let scene: WorldScene | null = null;
+if (isTouch) document.body.classList.add("touch");
 let mode: "online" | "solo" = "solo";
 
 let target: RoomTarget = { kind: "auto" };
@@ -189,6 +191,31 @@ function launchPhaser() {
     fps: { target: 60 },
   });
   wireKeys();
+  initTouch({
+    interact: () => {
+      if (dialogOpen()) dialogAdvance();
+      else if (!document.querySelector(".modal-bg")) scene?.interact();
+    },
+    attack: () => scene?.attack(),
+    drop: () => net.send("action", { type: "drop" }),
+    sit: () => net.send("action", { type: "sit" }),
+    celebrate: () => net.send("action", { type: "celebrate" }),
+    panel: (id) => !minigameOpen() && togglePanel(id),
+    chat: () => {
+      document.body.classList.add("show-chat");
+      document.querySelector<HTMLInputElement>(".chat-input")?.focus();
+    },
+    building: () => !!scene?.plotLayer?.buildItem,
+    toggleRemove: () => {
+      const pl = scene?.plotLayer;
+      if (!pl) return false;
+      pl.removeMode = !pl.removeMode;
+      return pl.removeMode;
+    },
+    stopBuild: () => scene?.plotLayer?.stopBuild(),
+  });
+  // celular: tocar no aviso "E · Falar com…" também interage
+  if (isTouch) document.querySelector(".hud-prompt")?.addEventListener("click", () => scene?.interact());
 }
 
 let lastPanelSig = "";

@@ -27,7 +27,7 @@ export function initHud() {
   els.alert = h("div", { class: "hud-alert hidden" });
   els.help = h("div", { class: "hud-keys" }, "WASD mover · Shift correr · E interagir · Q soltar · C comemorar · X sentar · I inventário · J missões · K habilidades · M mapa · H ajuda · Enter chat");
   const log = h("div", { class: "chat-log" });
-  const input = h("input", { class: "chat-input", maxlength: 140, placeholder: "Enter para conversar…" }) as HTMLInputElement;
+  const input = h("input", { class: "chat-input", maxlength: 140, placeholder: "Enter para conversar…", enterkeyhint: "send" }) as HTMLInputElement;
   input.addEventListener("focus", () => (typing = true));
   input.addEventListener("blur", () => (typing = false));
   input.addEventListener("keydown", (e) => {
@@ -37,6 +37,7 @@ export function initHud() {
       if (t) net.send("chat", { text: t });
       input.value = "";
       input.blur();
+      document.body.classList.remove("show-chat");
     } else if (e.key === "Escape") input.blur();
   });
   els.chatLog = log;
