@@ -120,7 +120,10 @@ export function initTouch(actions: TouchActions) {
     ["❓", "Ajuda", () => actions.panel("help")],
     ["⛶", "Tela cheia", () => fullscreen()],
   ];
+  if (!canFullscreen()) menuItems.pop(); // iPhone: não existe tela cheia para sites
+  const menuHead = h("div", { class: "tmenu-head" });
   const menu = h("div", { class: "tmenu hidden" },
+    menuHead,
     ...menuItems.map(([icon, label, fn]) =>
       h("button", { class: "tmenu-item", onclick: () => {
         menu.classList.add("hidden");
@@ -128,7 +131,16 @@ export function initTouch(actions: TouchActions) {
       } }, h("span", {}, icon), h("small", {}, label)),
     ),
   );
-  const menuBtn = h("button", { class: "tmenu-btn", "aria-label": "Menu", onclick: () => menu.classList.toggle("hidden") }, "☰");
+  const menuBtn = h("button", { class: "tmenu-btn", "aria-label": "Menu", onclick: () => {
+    // o indicador da sala (nome, pessoas, código, trocar) fica dentro do menu no celular
+    const room = document.querySelector(".hud-room");
+    if (room && room.parentElement !== menuHead) menuHead.appendChild(room);
+    menu.classList.toggle("hidden");
+  } }, "☰");
+  // tocar fora do menu fecha
+  document.addEventListener("pointerdown", (e) => {
+    if (!menu.classList.contains("hidden") && !menu.contains(e.target as Node) && e.target !== menuBtn) menu.classList.add("hidden");
+  }, true);
 
   // ------------------------------------------------------------------ barra do modo decoração
   const removeBtn = h("button", { class: "btn small", onclick: () => removeBtn.classList.toggle("on", actions.toggleRemove()) }, "🗑️ Modo remover");
@@ -151,12 +163,72 @@ export function initTouch(actions: TouchActions) {
   r.append(joy, pad, menuBtn, menu, buildBar, rotate);
 }
 
-function fullscreen() {
+export const isIOS =
+  typeof navigator !== "undefined" &&
+  (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && (navigator.maxTouchPoints ?? 0) > 1));
+
+/** Aberto como app (ícone na tela de início): já é tela cheia. */
+export function isStandalone() {
+  return window.matchMedia?.("(display-mode: fullscreen), (display-mode: standalone)").matches || (navigator as any).standalone === true;
+}
+
+export function canFullscreen() {
+  const el = document.documentElement as any;
+  return !!(el.requestFullscreen ?? el.webkitRequestFullscreen) && !/iPhone|iPod/.test(navigator.userAgent);
+}
+
+function isFull() {
+  return !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+}
+
+export function fullscreen(force?: boolean) {
   const el = document.documentElement as any;
   const req = el.requestFullscreen ?? el.webkitRequestFullscreen;
-  if (!document.fullscreenElement && req) {
-    Promise.resolve(req.call(el))
-      .then(() => (screen.orientation as any)?.lock?.("landscape").catch(() => {}))
-      .catch(() => {});
-  } else document.exitFullscreen?.().catch(() => {});
+  if (!isFull() && req) {
+    try {
+      Promise.resolve(req.call(el, { navigationUI: "hide" }))
+        .then(() => (screen.orientation as any)?.lock?.("landscape").catch(() => {}))
+        .catch(() => {});
+    } catch {
+      /* navegador sem suporte */
+    }
+  } else if (isFull() && !force) document.exitFullscreen?.().catch(() => {});
+}
+
+/**
+ * Celular: entra em tela cheia no primeiro toque (o navegador só permite depois de um toque).
+ * No iPhone o Safari não deixa sites ficarem em tela cheia; lá mostramos como instalar o jogo
+ * na tela de início, que abre sem as barras do navegador.
+ */
+export function initAutoFullscreen() {
+  if (!isTouch || isStandalone()) return;
+  if (canFullscreen()) {
+    const go = () => {
+      if (!isFull()) fullscreen(true);
+    };
+    document.addEventListener("pointerup", go, true);
+    return;
+  }
+  if (isIOS) {
+    let seen = false;
+    try {
+      seen = localStorage.getItem("mw.iosTip") === "1";
+    } catch {
+      /* sem storage */
+    }
+    if (seen) return;
+    const tip = h("div", { class: "ios-tip" },
+      h("b", {}, "📲 Jogar em tela cheia no iPhone"),
+      h("span", {}, "Toque em ", h("b", {}, "Compartilhar ⬆️"), " → ", h("b", {}, "Adicionar à Tela de Início"), ". Depois abra o MELI WORLD pelo ícone: ele abre sem as abas e barras do Safari."),
+      h("button", { class: "btn small primary", onclick: () => {
+        tip.remove();
+        try {
+          localStorage.setItem("mw.iosTip", "1");
+        } catch {
+          /* sem storage */
+        }
+      } }, "Entendi"),
+    );
+    document.body.appendChild(tip);
+  }
 }

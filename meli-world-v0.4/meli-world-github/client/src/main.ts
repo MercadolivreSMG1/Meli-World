@@ -12,11 +12,12 @@ import { h, root } from "./ui/dom";
 import * as Hud from "./ui/hud";
 import { minigameOpen, openMinigame } from "./ui/minigames";
 import { closePanel, refreshOpenPanel, showBoard, showLevelUp, showMissionComplete, togglePanel } from "./ui/panels";
-import { initTouch, isTouch } from "./ui/touch";
+import { initAutoFullscreen, initTouch, isTouch } from "./ui/touch";
 import { plotHooks, showMarket, showMp, showPlot, showRealty, showShop } from "./ui/commerce";
 
 let scene: WorldScene | null = null;
 if (isTouch) document.body.classList.add("touch");
+initAutoFullscreen();
 let mode: "online" | "solo" = "solo";
 
 let target: RoomTarget = { kind: "auto" };
